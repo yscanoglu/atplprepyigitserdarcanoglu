@@ -1016,16 +1016,16 @@ registerAircraft({
               { label: "Baz Değerler:", val: "Düz uçuş 120 kt / Alçalış-Tırmanış 90 kt — Tırmanış 30 gal/h, Düz 20 gal/h, Alçalış 10 gal/h" }
             ] },
             { items: [
-              { label: "GİDECEĞİM MESAFE / 2:", val: "Kaç DK gideceğim" },
-              { label: "SÜRE x 2:", val: "Kaç NM gideceğim" },
-              { label: "MESAFE / 6:", val: "Düz uçuşta kaç GAL yakacağım" },
-              { label: "DAKİKA / 3:", val: "Düz uçuşta kaç GAL yakacağım" }
+              { label: "KAÇ DK GİDECEĞİM:", val: "Gideceğim mesafe / 2" },
+              { label: "KAÇ NM GİDECEĞİM:", val: "Süre x 2" },
+              { label: "DÜZ UÇUŞTA KAÇ GAL YAKACAĞIM (MESAFEDEN):", val: "Mesafe / 6" },
+              { label: "DÜZ UÇUŞTA KAÇ GAL YAKACAĞIM (SÜREDEN):", val: "Dakika / 3" }
             ] },
             { header: "TOP OF DESCENT / TOP OF CLIMB:", mask: "TOD / TOC:", items: [
-              { label: "İRTİFA FARKI / 3:", val: "Alçalış için yakıt" },
-              { label: "İRTİFA FARKI:", val: "Tırmanış için yakıt" },
-              { label: "İRTİFA FARKI x 3:", val: "Kaç NM sürecek" },
-              { label: "İRTİFA FARKI x 2:", val: "Kaç DK sürecek" }
+              { label: "ALÇALIŞ İÇİN YAKIT:", val: "İrtifa farkı / 3" },
+              { label: "TIRMANIŞ İÇİN YAKIT:", val: "İrtifa farkı" },
+              { label: "KAÇ NM SÜRECEK:", val: "İrtifa farkı x 3" },
+              { label: "KAÇ DK SÜRECEK:", val: "İrtifa farkı x 2" }
             ] }
           ]
         },
@@ -1296,6 +1296,24 @@ registerAircraft({
           ]
         },
         {
+          title: "KOKPİT ALET KONTROLÜ",
+          groups: [
+            { items: [
+              "Frekans SET",
+              "CDI = NAV 1",
+              "BRG 1 = NAV 1 / BRG 2 = ADF"
+            ] },
+            { items: [
+              "NAV 1 dinle (2 kere) — Push Vol ID → %100 → SPKR NAV 1",
+              "CRS dot / Flag kontrol"
+            ] },
+            { items: [
+              "ADF dinle (2 kere) — SPKR → ADF",
+              "ADF antene al (90° kayıp)"
+            ] }
+          ]
+        },
+        {
           title: "PİST GİRİŞ ÖNCESİ KONTROLLER",
           groups: [
             { items: [
@@ -1385,18 +1403,23 @@ registerAircraft({
           title: "DAHİLİ KONTROLLER",
           groups: [
             { items: [
-              "Manyetolar ON",
-              "Batarya ON",
-              "Fuel Pumps ON"
+              "Devre Kesiciler İÇERİDE"
             ] },
             { items: [
               "Mixtures FULL RICH",
-              "Propellers FULL INCREASE",
-              "Fuel Selectors ON"
+              "Propellers FULL INCREASE"
             ] },
             { items: [
-              "Devre Kesiciler İÇERİDE",
-              "ALL GREEN"
+              "Alternatörler ON",
+              "Batarya ON"
+            ] },
+            { items: [
+              "Fuel Pumps ON",
+              "Manyetolar ON"
+            ] },
+            { items: [
+              "Selectors ON",
+              "Engine ALL GREEN"
             ] }
           ]
         },
@@ -1586,90 +1609,50 @@ registerAircraft({
           ]
         },
         {
-          title: "ONE ENGINE INOP — IDENTIFY (Hava Hareketi)",
+          title: "ONE ENGINE INOP (Hava Hareketi)",
+          keepGroups: true,
           groups: [
-            { items: [
+            { header: "IDENTIFY:", items: [
               "Mixtures BOTH FULL",
               "Propellers BOTH FULL",
-              "Throttle (Çalışan motor) FULL"
-            ] },
-            { items: [
+              "Throttle (Çalışan motor) FULL",
               "DEAD ENGINE — DEAD LEG",
               "LIVE ENGINE — FULL RUDDER",
-              "88 KT"
-            ] },
-            { items: [
+              "88 KT",
               "Flaps UP",
               "Landing Gear UP"
-            ] }
-          ],
-          notes: [
-            "NOT 1: Döneceğin motoru kapat.",
-            "NOT 2: İniş 25° flap."
-          ]
-        },
-        {
-          title: "ENGINE RESTART (Hava Hareketi)",
-          groups: [
-            { items: [
+            ] },
+            { header: "ENGINE RESTART:", restart: true, items: [
               "Fuel Pump ON",
               "Mixture FULL RICH",
               "Carb Heat ON",
               "Mag Left / Right OPEN (ON)",
               "Eng Start CRANK x 2"
-            ] }
-          ]
-        },
-        {
-          title: "FEATHERING",
-          groups: [
-            { items: [
+            ] },
+            { header: "FEATHERING:", restart: true, items: [
               "Throttle CLOSED",
               "Propeller FEATHER",
               "Mixture CUT OFF",
-              "Cowl Flap CLOSED"
-            ] },
-            { items: [
+              "Cowl Flap CLOSED",
               "Mag Left / Right OFF",
               "Fuel Pump OFF",
               "Alternator (ALTR) OFF",
               "Fuel Selector OFF"
-            ] }
-          ]
-        },
-        {
-          title: "UNFEATHERING",
-          groups: [
-            { items: [
+            ] },
+            { header: "UNFEATHERING:", restart: true, items: [
               "Fuel Selector ON",
               "Mag Left / Right ON",
-              "Fuel Pump ON"
-            ] },
-            { items: [
+              "Fuel Pump ON",
               "Mixture FULL RICH",
               "Propeller FULL INCREASE",
               "Throttle 1/4 INCH",
               "Eng Start CRANK",
               "Alternator (ALTR) ON"
             ] }
-          ]
-        },
-        {
-          title: "NAV RADYO SET",
-          groups: [
-            { items: [
-              "Frekans SET",
-              "CDI = NAV 1",
-              "BRG 1 = NAV 1 / BRG 2 = ADF"
-            ] },
-            { items: [
-              "NAV 1 dinle (2 kere) — Push Vol ID → %100 → SPKR NAV 1",
-              "CRS dot / Flag kontrol"
-            ] },
-            { items: [
-              "ADF dinle (2 kere) — SPKR → ADF",
-              "ADF antene al (90° kayıp)"
-            ] }
+          ],
+          notes: [
+            "NOT 1: Döneceğin motoru kapat.",
+            "NOT 2: İniş 25° flap."
           ]
         }
       ]

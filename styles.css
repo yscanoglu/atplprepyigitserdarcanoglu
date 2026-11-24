@@ -207,6 +207,7 @@ button { font-family: inherit; }
 .cg-res-label { font-size: 0.64rem; color: var(--text-muted); font-weight: 700; }
 .cg-res-val { font-size: 0.92rem; font-weight: 900; color: #fff; }
 .cg-res-val.alert { color: var(--emergency); }
+.cg-res-sub { display: block; font-size: 0.62rem; font-weight: 700; color: var(--text-muted); margin-top: 1px; }
 .status-pill { font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; white-space: nowrap; }
 .status-pill.ok { background: rgba(16,185,129,0.2); color: var(--normal); }
 .status-pill.bad { background: rgba(239,68,68,0.2); color: var(--emergency); }

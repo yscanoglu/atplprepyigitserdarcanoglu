@@ -4,7 +4,7 @@
    ============================================================ */
 'use strict';
 
-const APP_VERSION = 'v0.5';
+const APP_VERSION = 'v0.6';
 
 /* ---------- VERİ KAYDI (data/*.js dosyaları bunları çağırır) ---------- */
 const AIRCRAFT = [];
@@ -29,6 +29,7 @@ function normalizeDeck(deck, parentRoute, parentLabel) {
     return {
       key,
       title: c.title,
+      keepGroups: !!c.keepGroups,
       category: c.category || null,
       notes: c.notes || [],
       groups: c.groups.map(g => {
@@ -53,6 +54,7 @@ const esc = s => String(s == null ? '' : s)
 const round1 = x => Math.round(x * 10) / 10;
 const fmt1 = x => round1(x).toFixed(1);
 const fmtW = x => (Math.round(x * 10) / 10).toString();
+const fmtArm = x => (Math.round(x * 100) / 100).toString();
 const fmtAxis = x => (Number.isInteger(x) ? String(x) : x.toFixed(1));
 
 function store(key, val) {
@@ -304,7 +306,7 @@ function splitGroupsForColumns(card) {
     else if (count + g.items.length <= half) { left.push(g); count += g.items.length; }
     else {
       const take = half - count;
-      if ((count === 0 && g.items.length > half) || (take >= 2 && g.items.length - take >= 2)) {
+      if (!card.keepGroups && ((count === 0 && g.items.length > half) || (take >= 2 && g.items.length - take >= 2))) {
         left.push({ ...g, items: g.items.slice(0, take) });
         right.push({ header: '', mask: '', items: g.items.slice(take) });
         count += take;
@@ -469,8 +471,6 @@ function renderWB(view, id) {
   const cfg = a.wb;
   WB = { a, cfg };
   const saved = store('ckp.wb.' + a.id) || {};
-  // Uçağın varsayılan boş ağırlığı/kolu değiştiyse eski kayıtlı BEM değerlerini kullanma
-  if (saved.__bemDef !== `${cfg.emptyWeight}/${cfg.emptyArm}`) { delete saved.__bemW; delete saved.__bemArm; }
 
   view.innerHTML = `<section class="view-container view-scroll">
     ${navBar('aircraft/' + a.id, 'Geri', 'WEIGHT & BALANCE')}
@@ -480,11 +480,11 @@ function renderWB(view, id) {
       <div class="cg-grid">
         <div class="cg-group">
           <label>${esc(cfg.emptyLabel)} (lbs)</label>
-          <input type="number" inputmode="decimal" min="0" data-bem="w" placeholder="${cfg.emptyWeight}" value="${esc(saved.__bemW != null ? saved.__bemW : cfg.emptyWeight)}">
+          <input type="text" value="${cfg.emptyWeight} lbs" disabled>
         </div>
         <div class="cg-group">
           <label>${esc(cfg.emptyLabel)} Kolu (inç)</label>
-          <input type="number" inputmode="decimal" min="0" data-bem="arm" placeholder="Rapordan gir" value="${esc(saved.__bemArm != null ? saved.__bemArm : (cfg.emptyArm != null ? cfg.emptyArm : ''))}">
+          <input type="text" value="${cfg.emptyArm != null ? fmtArm(cfg.emptyArm) + '&quot;' : '—'}" disabled>
         </div>
         ${cfg.stations.map(st => `<div class="cg-group${st.wide ? ' wide' : ''}">
           <label>${esc(st.label)} (${st.unit ? esc(st.unit) : 'lbs'}${st.max ? ' - Max ' + st.max : ''}) [${fmt1(st.arm)}"${st.lbsPerUnit ? ' · ' + st.lbsPerUnit + ' lbs/' + esc(st.unit) : ''}]</label>
@@ -530,13 +530,8 @@ function runWB() {
   if (!WB) return;
   const { a, cfg } = WB;
   const saved = {};
-  const bemWInp = document.querySelector('[data-bem="w"]'), bemArmInp = document.querySelector('[data-bem="arm"]');
-  saved.__bemDef = `${cfg.emptyWeight}/${cfg.emptyArm}`;
-  if (bemWInp.value !== '' && parseFloat(bemWInp.value) !== cfg.emptyWeight) saved.__bemW = bemWInp.value;
-  if (bemArmInp.value !== '' && parseFloat(bemArmInp.value) !== cfg.emptyArm) saved.__bemArm = bemArmInp.value;
-  const bemW = isFinite(parseFloat(bemWInp.value)) ? parseFloat(bemWInp.value) : cfg.emptyWeight;
-  const bemArm = isFinite(parseFloat(bemArmInp.value)) ? parseFloat(bemArmInp.value) : null;
-  bemArmInp.classList.toggle('over', bemArm == null);
+  const bemW = cfg.emptyWeight;
+  const bemArm = cfg.emptyArm != null ? cfg.emptyArm : null;
   const rows = [{ label: cfg.emptyLabel, w: bemW, arm: bemArm }];
 
   document.querySelectorAll('[data-st]').forEach(inp => {
@@ -556,10 +551,14 @@ function runWB() {
   const noArm = bemArm == null;
   const moment = noArm ? NaN : rows.reduce((s, r) => s + r.w * r.arm, 0);
   const cg = moment / total;
-  const lim = envelopeLimitsAt(cfg.envelope, total);
+  // Ön limit ağırlığa göre değişir (POH: noktalar arası doğrusal). Ağırlık zarfın dışındaysa
+  // (ör. MTOW aşımı) en yakın zarf ağırlığındaki limit gösterilir.
+  const envW = cfg.envelope.map(p => p[1]);
+  const limW = Math.min(Math.max(total, Math.min(...envW)), Math.max(...envW));
+  const lim = envelopeLimitsAt(cfg.envelope, limW);
   const cgR = round1(cg);
   const weightOk = total <= cfg.maxWeight;
-  const cgOk = !noArm && !!lim && cgR >= round1(lim.fwd) && cgR <= round1(lim.aft);
+  const cgOk = !noArm && !!lim && limW === total && cgR >= round1(lim.fwd) && cgR <= round1(lim.aft);
   const ok = weightOk && cgOk;
   const dash = v => (isFinite(v) ? v : '—');
 
@@ -569,7 +568,7 @@ function runWB() {
   const cgEl = $('wbCg');
   cgEl.textContent = noArm ? '—' : `${fmt1(cg)}"`;
   cgEl.className = 'cg-res-val' + (cgOk ? '' : ' alert');
-  $('wbLimits').textContent = lim ? `${fmt1(lim.fwd)}" - ${fmt1(lim.aft)}"` : '—';
+  $('wbLimits').innerHTML = lim ? `${fmt1(lim.fwd)}" - ${fmt1(lim.aft)}"` + (limW !== total ? `<span class="cg-res-sub">${fmtW(limW)} lbs için</span>` : '') : '—';
 
   const st = $('wbStatus');
   st.className = 'status-pill ' + (ok ? 'ok' : 'bad');
@@ -581,7 +580,7 @@ function runWB() {
 
   $('wbChart').innerHTML = envelopeSVG(cfg, cg, total, lim, ok);
   $('wbLegend').innerHTML = noArm
-    ? `<b style="color:var(--condition)">${esc(cfg.emptyLabel)} kolu girilmedi.</b> Uçağının W&amp;B raporundaki boş ağırlık kolunu (inç) üstteki kutuya gir; C.G. hesabı ondan sonra yapılır.` + (cfg.note ? `<br>${esc(cfg.note)}` : '')
+    ? `<b style="color:var(--condition)">${esc(cfg.emptyLabel)} kolu girilmedi.</b> Bu uçağın verisine boş ağırlık kolu eklenmeli; C.G. hesabı ondan sonra yapılır.` + (cfg.note ? `<br>${esc(cfg.note)}` : '')
     : `<b>${fmtW(total)} lbs</b> | C.G. <b>${fmt1(cg)}"</b> | Ön limit ${lim ? fmt1(lim.fwd) + '"' : '—'} · Arka limit ${lim ? fmt1(lim.aft) + '"' : '—'} → <b style="color:${ok ? 'var(--normal)' : 'var(--emergency)'}">${ok ? 'Emniyetli bölgede' : 'LİMİT DIŞI!'}</b>` +
     (cfg.note ? `<br>${esc(cfg.note)}` : '');
 }
@@ -680,7 +679,7 @@ document.addEventListener('click', e => {
   if (activeView === 'drill' && !S.revealed && e.target.closest('#cardArea')) reveal();
 });
 
-document.addEventListener('input', e => { if (e.target.matches('[data-st], [data-bem]')) runWB(); });
+document.addEventListener('input', e => { if (e.target.matches('[data-st]')) runWB(); });
 
 window.addEventListener('keydown', e => {
   if (e.target.matches('input')) return;
