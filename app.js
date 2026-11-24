@@ -4,7 +4,7 @@
    ============================================================ */
 'use strict';
 
-const APP_VERSION = 'v0.6';
+const APP_VERSION = 'v0.7';
 
 /* ---------- VERİ KAYDI (data/*.js dosyaları bunları çağırır) ---------- */
 const AIRCRAFT = [];
@@ -108,6 +108,8 @@ function render() {
   activeView = '';
   $('toast').classList.remove('show');
   if (r[0] === 'aircraft' && r[1] && r[2] === 'wb') return renderWB(view, r[1]);
+  if (r[0] === 'aircraft' && r[1] && r[2] === 'perf' && r[3] === 'report' && typeof renderPerfReport === 'function') return renderPerfReport(view, r[1]);
+  if (r[0] === 'aircraft' && r[1] && r[2] === 'perf' && typeof renderPerf === 'function') return renderPerf(view, r[1]);
   if (r[0] === 'aircraft' && r[1]) return renderAircraftDash(view, r[1]);
   if (r[0] === 'aircraft') return renderAircraftList(view);
   if (r[0] === 'theory') return renderTheory(view);
@@ -171,7 +173,7 @@ function renderAircraftList(view) {
     <div class="menu-grid">
       ${AIRCRAFT.map(a => menuCard({
         icon: a.icon, title: a.name,
-        badge: `${a.decks.length + (a.wb ? 1 : 0)} Modül ❯`,
+        badge: `${a.decks.length + (a.wb ? 1 : 0) + (typeof PERF !== 'undefined' && PERF[a.id] ? 1 : 0)} Modül ❯`,
         route: 'aircraft/' + a.id
       })).join('')}
     </div>
@@ -187,6 +189,7 @@ function renderAircraftDash(view, id) {
     <div class="menu-grid">
       ${a.decks.map(d => deckMenuCard(d.key)).join('')}
       ${a.wb ? menuCard({ icon: '⚖️', title: 'Center of Gravity', badge: 'W&B Zarfı ❯', route: `aircraft/${a.id}/wb` }) : ''}
+      ${typeof PERF !== 'undefined' && PERF[a.id] ? menuCard({ icon: '📈', title: 'Performans Chartları', badge: 'Rapor ❯', route: `aircraft/${a.id}/perf` }) : ''}
     </div>
     ${footer(a.footer || a.name)}
   </section>`;
@@ -692,6 +695,8 @@ window.addEventListener('keydown', e => {
     else if (e.code === 'Digit2' && S.revealed) grade('known');
     else if (e.code === 'Escape') go(S.deck.parentRoute);
   } else if (activeView === 'wb' && e.code === 'Escape') go('aircraft/' + WB.a.id);
+  else if (activeView === 'perf' && e.code === 'Escape') go('aircraft/' + PERF_STATE.a.id);
+  else if (activeView === 'perfReport' && e.code === 'Escape') go('aircraft/' + PERF_STATE.a.id + '/perf');
 });
 
 window.addEventListener('hashchange', render);
