@@ -1,13 +1,14 @@
 /* Offline çalışma: dosyaları telefona kaydeder.
    İnternet varsa her zaman en güncel sürümü alır, yoksa kayıtlı sürümü açar.
    YENİ DOSYA EKLENİNCE (ör. data/pa44.js) aşağıdaki listeye ekle ve CACHE adını değiştir. */
-const CACHE = 'ckp-v0.2';
+const CACHE = 'ckp-v0.5';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './data/pa28r201.js',
+  './data/pa44180.js',
   './data/theory.js',
   './manifest.webmanifest',
   './icons/icon-180.png',

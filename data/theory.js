@@ -685,6 +685,7 @@ registerTheory({
     }
   ],
   comingSoon: [
+    { title: "Instrument Flight Rules", icon: "🧭" },
     { title: "Interview - ATPL", icon: "💼" },
     { title: "CRM & MCC", icon: "👥" }
   ]

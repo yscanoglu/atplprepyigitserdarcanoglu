@@ -4,7 +4,7 @@
    ============================================================ */
 'use strict';
 
-const APP_VERSION = 'v0.2';
+const APP_VERSION = 'v0.5';
 
 /* ---------- VERİ KAYDI (data/*.js dosyaları bunları çağırır) ---------- */
 const AIRCRAFT = [];
@@ -19,19 +19,28 @@ function registerTheory(t) {
 
 /* Kartları içeride kullanılacak hale getir: numaraları otomatik ver */
 function normalizeDeck(deck, parentRoute, parentLabel) {
+  const seen = new Set();
   const cards = deck.cards.map(c => {
     let n = 0;
+    // Aynı başlık destede iki kez geçiyorsa (ör. CAS: Warning + Caution) ilerleme ayrı tutulsun
+    let key = c.title;
+    if (seen.has(key)) key = c.title + '|' + (c.category || seen.size);
+    seen.add(key);
     return {
+      key,
       title: c.title,
       category: c.category || null,
       notes: c.notes || [],
-      groups: c.groups.map(g => ({
-        header: g.header || '',
-        mask: g.mask || g.header || '',
-        items: g.items.map(it => typeof it === 'string'
-          ? { text: it, n: ++n }
-          : { label: it.label, val: it.val, sub: it.sub, mask: it.mask })
-      }))
+      groups: c.groups.map(g => {
+        if (g.restart) n = 0; // basılı checklistteki gibi numara 1'den yeniden başlar
+        return {
+          header: g.header || '',
+          mask: g.mask || g.header || '',
+          items: g.items.map(it => typeof it === 'string'
+            ? { text: it, n: ++n }
+            : { label: it.label, val: it.val, sub: it.sub, mask: it.mask })
+        };
+      })
     };
   });
   DECKS[deck.key] = { ...deck, cards, parentRoute, parentLabel };
@@ -44,6 +53,7 @@ const esc = s => String(s == null ? '' : s)
 const round1 = x => Math.round(x * 10) / 10;
 const fmt1 = x => round1(x).toFixed(1);
 const fmtW = x => (Math.round(x * 10) / 10).toString();
+const fmtAxis = x => (Number.isInteger(x) ? String(x) : x.toFixed(1));
 
 function store(key, val) {
   try {
@@ -74,7 +84,7 @@ const Progress = {
     const deck = DECKS[deckKey];
     let known = 0, weak = 0;
     deck.cards.forEach(c => {
-      const s = this.get(deckKey, c.title);
+      const s = this.get(deckKey, c.key);
       if (s === 'known') known++; else if (s === 'weak') weak++;
     });
     return { known, weak, total: deck.cards.length };
@@ -147,7 +157,7 @@ function renderRoot(view) {
     </div>
     <div class="menu-grid">
       ${menuCard({ icon: '✈️', title: 'Aircrafts', badge: `${aircraftCount} Uçak ❯`, route: 'aircraft' })}
-      ${menuCard({ icon: '📚', title: 'Theoretical', badge: 'Teori ❯', route: 'theory' })}
+      ${menuCard({ icon: '📚', title: 'General Aviation Knowledge', badge: 'Teori ❯', route: 'theory' })}
     </div>
     ${footer('Prepared for personal study. For actual operations, consult your flight instructor and your school. This is not an official document.', true)}
   </main>`;
@@ -182,12 +192,12 @@ function renderAircraftDash(view, id) {
 
 function renderTheory(view) {
   view.innerHTML = `<section class="view-container">
-    ${navBar('', 'Ana Menü', 'THEORETICAL')}
+    ${navBar('', 'Ana Menü', 'GENERAL AVIATION KNOWLEDGE')}
     <div class="menu-grid">
       ${THEORY.decks.map(d => deckMenuCard(d.key)).join('')}
       ${THEORY.comingSoon.map((s, i) => menuCard({ icon: s.icon, title: s.title, badge: 'Yapım Aşamasında', route: 'soon/' + i, soon: true })).join('')}
     </div>
-    ${footer('Theoretical Knowledge, Formulae and Weather Systems')}
+    ${footer('Theoretical Knowledge, Formulas and Weather Systems')}
   </section>`;
 }
 
@@ -248,7 +258,7 @@ function renderDrill(view, deckKey) {
 }
 
 function renderFilters() {
-  const weakCount = S.deck.cards.filter(c => Progress.get(S.deckKey, c.title) === 'weak').length;
+  const weakCount = S.deck.cards.filter(c => Progress.get(S.deckKey, c.key) === 'weak').length;
   const filters = [{ id: 'ALL', label: 'Tümü' }, ...(S.deck.filters || []), { id: 'WEAK', label: `✗ Tekrar (${weakCount})`, cls: 'weak' }];
   $('filterGroup').innerHTML = filters.map(f =>
     `<button class="filter-btn ${f.cls || ''} ${S.filter === f.id ? 'active' : ''}" data-filter="${esc(f.id)}">${esc(f.label)}</button>`
@@ -258,7 +268,7 @@ function renderFilters() {
 function applyFilter() {
   const all = S.deck.cards;
   if (S.filter === 'ALL') S.list = all.slice();
-  else if (S.filter === 'WEAK') S.list = all.filter(c => Progress.get(S.deckKey, c.title) === 'weak');
+  else if (S.filter === 'WEAK') S.list = all.filter(c => Progress.get(S.deckKey, c.key) === 'weak');
   else S.list = all.filter(c => c.category === S.filter);
   S.order = buildOrder();
   S.pos = 0;
@@ -354,7 +364,7 @@ function renderCard() {
   if (card.category) { badge.textContent = card.category; badge.className = 'type-badge ' + card.category.toLowerCase(); }
   else { badge.textContent = S.deck.name.toUpperCase(); badge.className = 'type-badge'; }
 
-  const mark = Progress.get(S.deckKey, card.title);
+  const mark = Progress.get(S.deckKey, card.key);
   const mb = $('markBadge');
   mb.className = 'mark-badge ' + (mark || '');
   mb.textContent = mark === 'known' ? '✓ Biliniyor' : mark === 'weak' ? '✗ Tekrar' : '';
@@ -412,7 +422,7 @@ function prevCard() {
 function grade(state) {
   const card = currentCard();
   if (!card) return;
-  Progress.set(S.deckKey, card.title, state);
+  Progress.set(S.deckKey, card.key, state);
   if (state === 'weak' && S.order.length > 1) {
     // Bilemediğin kart birkaç kart sonra tekrar gelir
     const at = Math.min(S.pos + 4, S.order.length);
@@ -459,6 +469,8 @@ function renderWB(view, id) {
   const cfg = a.wb;
   WB = { a, cfg };
   const saved = store('ckp.wb.' + a.id) || {};
+  // Uçağın varsayılan boş ağırlığı/kolu değiştiyse eski kayıtlı BEM değerlerini kullanma
+  if (saved.__bemDef !== `${cfg.emptyWeight}/${cfg.emptyArm}`) { delete saved.__bemW; delete saved.__bemArm; }
 
   view.innerHTML = `<section class="view-container view-scroll">
     ${navBar('aircraft/' + a.id, 'Geri', 'WEIGHT & BALANCE')}
@@ -467,8 +479,12 @@ function renderWB(view, id) {
       <div class="cg-card-title"><span>⚖️ Ağırlık Girişleri</span><button class="mini-btn" data-act="wbclear">Temizle</button></div>
       <div class="cg-grid">
         <div class="cg-group">
-          <label>${esc(cfg.emptyLabel)} (Sabit)</label>
-          <input type="text" value="${cfg.emptyWeight} lbs @ ${fmt1(cfg.emptyArm)}&quot;" disabled>
+          <label>${esc(cfg.emptyLabel)} (lbs)</label>
+          <input type="number" inputmode="decimal" min="0" data-bem="w" placeholder="${cfg.emptyWeight}" value="${esc(saved.__bemW != null ? saved.__bemW : cfg.emptyWeight)}">
+        </div>
+        <div class="cg-group">
+          <label>${esc(cfg.emptyLabel)} Kolu (inç)</label>
+          <input type="number" inputmode="decimal" min="0" data-bem="arm" placeholder="Rapordan gir" value="${esc(saved.__bemArm != null ? saved.__bemArm : (cfg.emptyArm != null ? cfg.emptyArm : ''))}">
         </div>
         ${cfg.stations.map(st => `<div class="cg-group${st.wide ? ' wide' : ''}">
           <label>${esc(st.label)} (${st.unit ? esc(st.unit) : 'lbs'}${st.max ? ' - Max ' + st.max : ''}) [${fmt1(st.arm)}"${st.lbsPerUnit ? ' · ' + st.lbsPerUnit + ' lbs/' + esc(st.unit) : ''}]</label>
@@ -513,8 +529,15 @@ function envelopeLimitsAt(env, w) {
 function runWB() {
   if (!WB) return;
   const { a, cfg } = WB;
-  const rows = [{ label: cfg.emptyLabel, w: cfg.emptyWeight, arm: cfg.emptyArm }];
   const saved = {};
+  const bemWInp = document.querySelector('[data-bem="w"]'), bemArmInp = document.querySelector('[data-bem="arm"]');
+  saved.__bemDef = `${cfg.emptyWeight}/${cfg.emptyArm}`;
+  if (bemWInp.value !== '' && parseFloat(bemWInp.value) !== cfg.emptyWeight) saved.__bemW = bemWInp.value;
+  if (bemArmInp.value !== '' && parseFloat(bemArmInp.value) !== cfg.emptyArm) saved.__bemArm = bemArmInp.value;
+  const bemW = isFinite(parseFloat(bemWInp.value)) ? parseFloat(bemWInp.value) : cfg.emptyWeight;
+  const bemArm = isFinite(parseFloat(bemArmInp.value)) ? parseFloat(bemArmInp.value) : null;
+  bemArmInp.classList.toggle('over', bemArm == null);
+  const rows = [{ label: cfg.emptyLabel, w: bemW, arm: bemArm }];
 
   document.querySelectorAll('[data-st]').forEach(inp => {
     const st = cfg.stations.find(s => s.id === inp.dataset.st);
@@ -530,32 +553,36 @@ function runWB() {
   store('ckp.wb.' + a.id, saved);
 
   const total = rows.reduce((s, r) => s + r.w, 0);
-  const moment = rows.reduce((s, r) => s + r.w * r.arm, 0);
+  const noArm = bemArm == null;
+  const moment = noArm ? NaN : rows.reduce((s, r) => s + r.w * r.arm, 0);
   const cg = moment / total;
   const lim = envelopeLimitsAt(cfg.envelope, total);
   const cgR = round1(cg);
   const weightOk = total <= cfg.maxWeight;
-  const cgOk = !!lim && cgR >= round1(lim.fwd) && cgR <= round1(lim.aft);
+  const cgOk = !noArm && !!lim && cgR >= round1(lim.fwd) && cgR <= round1(lim.aft);
   const ok = weightOk && cgOk;
+  const dash = v => (isFinite(v) ? v : '—');
 
   const towEl = $('wbTow');
   towEl.textContent = `${fmtW(total)} lbs`;
   towEl.className = 'cg-res-val' + (weightOk ? '' : ' alert');
   const cgEl = $('wbCg');
-  cgEl.textContent = `${fmt1(cg)}"`;
+  cgEl.textContent = noArm ? '—' : `${fmt1(cg)}"`;
   cgEl.className = 'cg-res-val' + (cgOk ? '' : ' alert');
   $('wbLimits').textContent = lim ? `${fmt1(lim.fwd)}" - ${fmt1(lim.aft)}"` : '—';
 
   const st = $('wbStatus');
   st.className = 'status-pill ' + (ok ? 'ok' : 'bad');
-  st.textContent = ok ? 'LİMİTLER İÇİNDE' : (!weightOk ? 'AĞIRLIK AŞIMI (MTOW)!' : 'C.G. LİMİT DIŞI!');
+  st.textContent = ok ? 'LİMİTLER İÇİNDE' : (!weightOk ? 'AĞIRLIK AŞIMI (MTOW)!' : noArm ? 'BEM KOLU GİRİLMEDİ' : 'C.G. LİMİT DIŞI!');
 
   $('wbTable').innerHTML = `<tr><th>İstasyon</th><th>Ağırlık</th><th>Kol</th><th>Moment</th></tr>` +
-    rows.map(r => `<tr><td${r.capped ? ' class="capped"' : ''}>${esc(r.label)}${r.capped ? ' ⚠︎ max' : ''}</td><td>${fmtW(r.w)}</td><td>${fmt1(r.arm)}</td><td>${Math.round(r.w * r.arm)}</td></tr>`).join('') +
-    `<tr class="total"><td>TOPLAM</td><td>${fmtW(total)}</td><td>${fmt1(cg)}</td><td>${Math.round(moment)}</td></tr>`;
+    rows.map(r => `<tr><td${r.capped ? ' class="capped"' : ''}>${esc(r.label)}${r.capped ? ' ⚠︎ max' : ''}</td><td>${fmtW(r.w)}</td><td>${r.arm == null ? '—' : fmt1(r.arm)}</td><td>${r.arm == null ? '—' : Math.round(r.w * r.arm)}</td></tr>`).join('') +
+    `<tr class="total"><td>TOPLAM</td><td>${fmtW(total)}</td><td>${noArm ? '—' : fmt1(cg)}</td><td>${noArm ? '—' : Math.round(moment)}</td></tr>`;
 
   $('wbChart').innerHTML = envelopeSVG(cfg, cg, total, lim, ok);
-  $('wbLegend').innerHTML = `<b>${fmtW(total)} lbs</b> | C.G. <b>${fmt1(cg)}"</b> | Ön limit ${lim ? fmt1(lim.fwd) + '"' : '—'} · Arka limit ${lim ? fmt1(lim.aft) + '"' : '—'} → <b style="color:${ok ? 'var(--normal)' : 'var(--emergency)'}">${ok ? 'Emniyetli bölgede' : 'LİMİT DIŞI!'}</b>` +
+  $('wbLegend').innerHTML = noArm
+    ? `<b style="color:var(--condition)">${esc(cfg.emptyLabel)} kolu girilmedi.</b> Uçağının W&amp;B raporundaki boş ağırlık kolunu (inç) üstteki kutuya gir; C.G. hesabı ondan sonra yapılır.` + (cfg.note ? `<br>${esc(cfg.note)}` : '')
+    : `<b>${fmtW(total)} lbs</b> | C.G. <b>${fmt1(cg)}"</b> | Ön limit ${lim ? fmt1(lim.fwd) + '"' : '—'} · Arka limit ${lim ? fmt1(lim.aft) + '"' : '—'} → <b style="color:${ok ? 'var(--normal)' : 'var(--emergency)'}">${ok ? 'Emniyetli bölgede' : 'LİMİT DIŞI!'}</b>` +
     (cfg.note ? `<br>${esc(cfg.note)}` : '');
 }
 
@@ -580,15 +607,21 @@ function envelopeSVG(cfg, cg, total, lim, ok) {
   for (let x = xMin; x <= xMax; x += 1) {
     s += `<line x1="${sx(x)}" y1="${T}" x2="${sx(x)}" y2="${B}" stroke="#131e33" stroke-width="${x % 2 ? 0.5 : 1}"/>`;
     if (x % 2 === 0 && !specialX.some(v => Math.abs(v - x) < 1.3))
-      s += `<text x="${sx(x)}" y="${B + 19}" fill="#94a3b8" font-size="13" text-anchor="middle">${x.toFixed(1)}</text>`;
+      s += `<text x="${sx(x)}" y="${B + 19}" fill="#94a3b8" font-size="13" text-anchor="middle">${fmtAxis(x)}</text>`;
   }
   for (let y = yMin; y <= yMax; y += 100) {
     s += `<line x1="${L}" y1="${sy(y)}" x2="${R}" y2="${sy(y)}" stroke="#131e33" stroke-width="${y % 200 ? 0.5 : 1}"/>`;
     if (y % 200 === 0 && !specialY.some(v => Math.abs(v - y) < 70))
       s += `<text x="${L - 6}" y="${sy(y) + 3}" fill="#94a3b8" font-size="13" text-anchor="end">${y}</text>`;
   }
-  specialX.forEach(x => s += `<text x="${sx(x)}" y="${B + 19}" fill="#38bdf8" font-size="13" font-weight="bold" text-anchor="middle">${x.toFixed(1)}</text>`);
-  specialY.forEach(y => s += `<text x="${L - 6}" y="${sy(y) + 3}" fill="${y === cfg.maxWeight ? '#ef4444' : '#f59e0b'}" font-size="13" font-weight="bold" text-anchor="end">${y}</text>`);
+  specialX.forEach(x => s += `<text x="${sx(x)}" y="${B + 19}" fill="#38bdf8" font-size="13" font-weight="bold" text-anchor="middle">${fmtAxis(x)}</text>`);
+  // Birbirine çok yakın zarf ağırlıklarını atla (etiketler üst üste binmesin); max ağırlık her zaman yazılır
+  let lastY = -1e9;
+  specialY.slice().sort((p, q) => q - p).forEach(y => {
+    if (y !== cfg.maxWeight && Math.abs(sy(y) - lastY) < 19) return;
+    lastY = sy(y);
+    s += `<text x="${L - 6}" y="${sy(y) + 3}" fill="${y === cfg.maxWeight ? '#ef4444' : '#f59e0b'}" font-size="13" font-weight="bold" text-anchor="end">${y}</text>`;
+  });
   s += `<rect x="${L}" y="${T}" width="${R - L}" height="${B - T}" fill="none" stroke="#334155" stroke-width="1.5"/>`;
   s += `<text x="14" y="${(T + B) / 2}" fill="#38bdf8" font-size="12" font-weight="bold" transform="rotate(-90 14 ${(T + B) / 2})" text-anchor="middle">AĞIRLIK (LBS)</text>`;
   s += `<text x="${(L + R) / 2}" y="${H - 12}" fill="#38bdf8" font-size="12" font-weight="bold" text-anchor="middle">C.G. KONUMU (INCHES AFT OF DATUM)</text>`;
@@ -599,6 +632,7 @@ function envelopeSVG(cfg, cg, total, lim, ok) {
   s += `<text x="${R - 4}" y="${sy(cfg.maxWeight) - 5}" fill="#ef4444" font-size="12" font-weight="bold" text-anchor="end">MAX GROSS WT: ${cfg.maxWeight} LBS</text>`;
 
   // hesaplanan nokta
+  if (!isFinite(cg)) return s + '</svg>';
   const py = clampY(sy(total)), px = clampX(sx(cg));
   const col = ok ? '#10b981' : '#ef4444';
   s += `<line x1="${L}" y1="${py}" x2="${R}" y2="${py}" stroke="#475569" stroke-width="1" stroke-dasharray="3,3"/>`;
@@ -646,7 +680,7 @@ document.addEventListener('click', e => {
   if (activeView === 'drill' && !S.revealed && e.target.closest('#cardArea')) reveal();
 });
 
-document.addEventListener('input', e => { if (e.target.matches('[data-st]')) runWB(); });
+document.addEventListener('input', e => { if (e.target.matches('[data-st], [data-bem]')) runWB(); });
 
 window.addEventListener('keydown', e => {
   if (e.target.matches('input')) return;
