@@ -16,8 +16,9 @@ Canlı adres: https://yscanoglu.github.io/atplprepyigitserdarcanoglu/ (GitHub Pa
 - `data/*.js` — sadece veri. `registerAircraft({...})` veya `registerTheory({...})` çağırır.
   - Kart maddesi: `"Metin"` → numaralı adım (numara otomatik); `{ label, val, sub?, mask? }` → etiket + gizli değer.
   - Grup: `{ header, mask, restart, items }` — `mask` gizliyken görünen başlık, `restart: true` numarayı 1'den başlatır.
-  - Kart: `{ title, category?, groups, notes? }` — `category` filtre ve rozet içindir (EMERGENCY/NORMAL/WARNING/CAUTION/ADVISORY).
+  - Kart: `{ title, category?, keepGroups?, groups, notes? }` (`keepGroups: true` → iki sütuna bölerken bölümleri ortadan kesme) — `category` filtre ve rozet içindir (EMERGENCY/NORMAL/WARNING/CAUTION/ADVISORY).
   - Uçak `wb`: `emptyWeight`, `emptyArm` (null olabilir → kullanıcı girer), `stations[]`, `envelope` [[CG, lbs], ...], `maxWeight`.
+- `perf.js` — performans modülü (girişler → POH chart hesapları → chart üstüne SVG çizim → yazdırılabilir A4 yatay rapor). Uçak başına `data/<id>-perf.js` (`registerPerformance`), görseller `data/perf/<uçak>/`. Chart koordinatları 300 dpi POH sayfa pikselleridir; sayısallaştırma araçları depoda değil.
 - `sw.js` — offline (network-first). **Dosya eklenince `ASSETS` listesine ekle ve `CACHE` adını değiştir.**
 - `manifest.webmanifest`, `icons/` — ana ekran uygulaması ("ATPL Prep by YSC").
 
@@ -32,3 +33,6 @@ Canlı adres: https://yscanoglu.github.io/atplprepyigitserdarcanoglu/ (GitHub Pa
 - v0.3 — PA-44-180 Seminole (Checklist, CAS, Limitler, Manevralar, W&B); teori bölümü "General Aviation Knowledge", IFR yapım aşamasında.
 - v0.4 — PA-44 POH düzeltmeleri: Fuel Quantity (XFEED), tırmanış gücü 24 inHg / 2400 RPM, briefing "Koşu Mesafesi (FT)". BEM kolu POH'ta yok → kullanıcı kendi uçağının W&B raporundan girecek.
 - v0.5 — PA-44 W&B boş ağırlık/kol: okulun Mass and Balance uygulamasından 2779.17 lbs @ 89.42". (Limitler kartındaki "BEM 2589" kullanıcının notundan, POH örneği.)
+- v0.6 — W&B'de BEM/kol sabit (düzenlenemez); ön limit ağırlığa göre (POH 2.13) ve MTOW üstünde 3800 lbs limiti gösterilir. PA-44: "Kokpit Alet Kontrolü" (eski Nav Radyo Set) pist giriş öncesinden önce; Dahili Kontroller güncellendi; Rule of Thumb soru→formül; One Engine Inop tek kart.
+- v0.7 — PA-44 Performans Chartları modülü (12 POH chartı, Vizyon Havacılık formu, PDF/yazdır). Varsayılan: LTAZ 3090 ft, seyir 7500 ft, %55 güç, 20 gal/h, 1 hPa = 30 ft, seyir OAT = ISA düşüşü. SW artık `cache: 'no-cache'` ile her açılışta günceli kontrol eder.
+- v0.8 — Kart ekranı: Bildim/Bilemedim küçük ve köşelerde, ortada büyük "Gizle" tuşu; son karttan yanlışlıkla İleri'ye basınca Geri önceki turun son kartına döner.

@@ -156,12 +156,15 @@ button { font-family: inherit; }
 }
 .reveal-btn:active { transform: scale(0.98); opacity: 0.9; }
 .reveal-btn:disabled { opacity: 0.35; box-shadow: none; }
-.grade-row { display: grid; grid-template-columns: 1fr 52px 1fr; gap: 6px; }
+.grade-row { display: grid; grid-template-columns: 46px 1fr 46px; gap: 10px; align-items: stretch; }
 .grade-btn { border: none; padding: 12px 6px; border-radius: 12px; font-weight: 800; font-size: 0.92rem; cursor: pointer; }
+.grade-btn.weak, .grade-btn.known { padding: 3px 0; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; }
+.grade-btn.weak b, .grade-btn.known b { font-size: 0.95rem; }
+.grade-btn.weak small, .grade-btn.known small { font-size: 0.5rem; font-weight: 700; margin-top: 2px; opacity: 0.85; }
 .grade-btn:active { transform: scale(0.97); }
 .grade-btn.weak { background: rgba(239,68,68,0.18); color: #fca5a5; border: 1px solid rgba(239,68,68,0.45); }
 .grade-btn.known { background: rgba(16,185,129,0.2); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.5); }
-.grade-btn.hide { background: #334155; color: #f8fafc; font-size: 1rem; }
+.grade-btn.hide { background: var(--accent); color: #090d16; font-size: 0.95rem; box-shadow: 0 4px 15px var(--accent-glow); }
 
 .nav-controls { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 6px; }
 .nav-btn {

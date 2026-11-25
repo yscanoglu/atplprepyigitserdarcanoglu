@@ -4,7 +4,7 @@
    ============================================================ */
 'use strict';
 
-const APP_VERSION = 'v0.7';
+const APP_VERSION = 'v0.8';
 
 /* ---------- VERİ KAYDI (data/*.js dosyaları bunları çağırır) ---------- */
 const AIRCRAFT = [];
@@ -277,6 +277,7 @@ function applyFilter() {
   else S.list = all.filter(c => c.category === S.filter);
   S.order = buildOrder();
   S.pos = 0;
+  S.prevRound = null;
   renderFilters();
   renderCard();
 }
@@ -400,9 +401,9 @@ function reveal() {
     ? `<div class="notes-box revealed">${card.notes.map(n => `<div>⚠️ <b>${esc(n)}</b></div>`).join('')}</div>`
     : '';
   $('answerRow').innerHTML = `<div class="grade-row">
-    <button class="grade-btn weak" data-act="weak">✗ Bilemedim</button>
-    <button class="grade-btn hide" data-act="reveal" aria-label="Gizle">🙈</button>
-    <button class="grade-btn known" data-act="known">✓ Bildim</button>
+    <button class="grade-btn weak" data-act="weak" aria-label="Bilemedim"><b>✗</b><small>Bilemedim</small></button>
+    <button class="grade-btn hide" data-act="reveal" aria-label="Gizle">🙈 Gizle</button>
+    <button class="grade-btn known" data-act="known" aria-label="Bildim"><b>✓</b><small>Bildim</small></button>
   </div>`;
 }
 
@@ -411,6 +412,7 @@ function nextCard() {
   S.pos++;
   if (S.pos >= S.order.length) {
     const last = S.order[S.order.length - 1];
+    S.prevRound = S.order.slice(); // "Geri" ile bitirilen tura dönebilmek için
     S.order = buildOrder();
     if (S.shuffle && S.order.length > 1 && S.order[0] === last) [S.order[0], S.order[1]] = [S.order[1], S.order[0]];
     S.pos = 0;
@@ -421,6 +423,12 @@ function nextCard() {
 
 function prevCard() {
   if (S.pos > 0) { S.pos--; renderCard(); }
+  else if (S.prevRound && S.prevRound.length) {
+    // Son karttan yanlışlıkla İleri'ye basıldıysa önceki turun son kartına dön
+    S.order = S.prevRound; S.prevRound = null;
+    S.pos = S.order.length - 1;
+    renderCard();
+  }
   else toast('Turun başındasın');
 }
 
@@ -450,6 +458,7 @@ function toggleShuffle() {
   const cur = S.order[S.pos];
   S.order = buildOrder(cur);
   S.pos = 0;
+  S.prevRound = null;
   updateShuffleBtn();
   renderCard();
 }
