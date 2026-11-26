@@ -1118,7 +1118,7 @@ registerAircraft({
               { label: "Alternatör Max Flight:", val: "80 amp" }
             ] },
             { items: [
-              { label: "Main Battery:", val: "24 V / 13.6 Ah — Min 25 V / Max 32 V" },
+              { label: "Main Battery:", val: "13.6 Ah — Min 25 V / Max 32 V" },
               { label: "Emergency Battery:", val: "Min 20 V / Min for flight 23.3 V / Max 32 V" },
               { label: "Hatırlatma:", val: "23.3 V sabah göreceğiz" }
             ] }
@@ -1592,7 +1592,7 @@ registerAircraft({
             ] },
             { items: [
               "Throttle IDLE",
-              "RPM 1000",
+              "RPM FULL INCREASE",
               "Landing Gear DOWN",
               "3 yeşil / İniş takımları aşağıda ve kilitli"
             ] },

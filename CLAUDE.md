@@ -36,3 +36,4 @@ Canlı adres: https://yscanoglu.github.io/atplprepyigitserdarcanoglu/ (GitHub Pa
 - v0.6 — W&B'de BEM/kol sabit (düzenlenemez); ön limit ağırlığa göre (POH 2.13) ve MTOW üstünde 3800 lbs limiti gösterilir. PA-44: "Kokpit Alet Kontrolü" (eski Nav Radyo Set) pist giriş öncesinden önce; Dahili Kontroller güncellendi; Rule of Thumb soru→formül; One Engine Inop tek kart.
 - v0.7 — PA-44 Performans Chartları modülü (12 POH chartı, Vizyon Havacılık formu, PDF/yazdır). Varsayılan: LTAZ 3090 ft, seyir 7500 ft, %55 güç, 20 gal/h, 1 hPa = 30 ft, seyir OAT = ISA düşüşü. SW artık `cache: 'no-cache'` ile her açılışta günceli kontrol eder.
 - v0.8 — Kart ekranı: Bildim/Bilemedim küçük ve köşelerde, ortada büyük "Gizle" tuşu; son karttan yanlışlıkla İleri'ye basınca Geri önceki turun son kartına döner.
+- v0.9 — Emergency Descent 8. madde "RPM FULL INCREASE"; Main Battery "24 V" kaldırıldı; performans raporunda alçalış sonucunun yanına "165 KIAS için" notu.

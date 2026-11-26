@@ -4,7 +4,7 @@
    ============================================================ */
 'use strict';
 
-const APP_VERSION = 'v0.8';
+const APP_VERSION = 'v0.9';
 
 /* ---------- VERİ KAYDI (data/*.js dosyaları bunları çağırır) ---------- */
 const AIRCRAFT = [];

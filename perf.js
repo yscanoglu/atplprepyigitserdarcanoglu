@@ -349,7 +349,7 @@ function perfUpdate() {
       ${row('Gear Up Dual Engine Climb', f0(r.gu.value) + ' fpm')}
       ${row('Climb (Fuel / Time / Dist)', `${f1(r.fclimb.value.fuel)} gal / ${f1(r.fclimb.value.time)} min / ${f1(r.fclimb.value.dist)} NM`)}
       ${row('Endurance / Range', `${f1(r.re.value.endur)} h / ${f0(r.re.value.range)} NM`)}
-      ${row('Descent (Fuel / Time / Dist)', `${f1(r.fdesc.value.fuel)} gal / ${f1(r.fdesc.value.time)} min / ${f1(r.fdesc.value.dist)} NM`)}
+      ${row('Descent (Fuel / Time / Dist) — 165 KIAS için', `${f1(r.fdesc.value.fuel)} gal / ${f1(r.fdesc.value.time)} min / ${f1(r.fdesc.value.dist)} NM`)}
       ${row('Landing Weight', `${f0(R.lw)} lbs (−${f1(R.burnGal)} gal)`)}
       ${row('Landing PA / DA', `${f0(R.ld.pa)} / ${f0(R.ld.da)} ft`)}
       ${row('Landing HW / XW', `${f0(R.ld.hw)} / ${f0(R.ld.xw)} kt ${R.ld.side}`)}
@@ -438,7 +438,7 @@ function renderPerfReport(view, id) {
     </div>
 
     <div class="rp-page rp-charts">
-      ${fig(climbFig('fdesc', r.fdesc), `Fuel for Descent: <b>${f1(fd.fuel)} gal</b> · Time for Descent: <b>${f1(fd.time)} min</b> · Distance for Descent: <b>${f1(fd.dist)} NM</b>`)}
+      ${fig(climbFig('fdesc', r.fdesc), `Fuel for Descent: <b>${f1(fd.fuel)} gal</b> · Time for Descent: <b>${f1(fd.time)} min</b> · Distance for Descent: <b>${f1(fd.dist)} NM</b> <span style="font-size:0.8em">(POH: 165 KIAS, 500 fpm için)</span>`)}
       ${fig(svgChart(C.lgr, [{ color: LD, ...r.lgr }], [L(r.lgr.end[0] - C.lgr.crop[2] * 0.16, r.lgr.end[1] - 34, f0(r.lgr.value) + ' ft', LD)]), `Landing Ground Roll: <b>${f0(r.lgr.value)} ft</b>`)}
       ${fig(windFig, `<span style="color:${TO}">Takeoff</span> HW <b>${f0(R.to.hw)}</b> / XW <b>${f0(R.to.xw)}</b> kt · <span style="color:${LD}">Landing</span> HW <b>${f0(R.ld.hw)}</b> / XW <b>${f0(R.ld.xw)}</b> kt`)}
       ${fig(svgChart(C.l50, [{ color: LD, ...r.l50 }], [L(r.l50.end[0] - C.l50.crop[2] * 0.16, r.l50.end[1] - 34, f0(r.l50.value) + ' ft', LD)]), `Landing Distance Over 50ft: <b>${f0(r.l50.value)} ft</b>`)}
